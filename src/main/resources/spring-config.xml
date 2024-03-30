@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:int="http://www.springframework.org/schema/integration"
+	xmlns:int-jms="http://www.springframework.org/schema/integration/jms"
+	xmlns:int-http="http://www.springframework.org/schema/integration/http"
+	xmlns:int-jdbc="http://www.springframework.org/schema/integration/jdbc"
+	xmlns:int-sftp="http://www.springframework.org/schema/integration/sftp"
+	xmlns:int-file="http://www.springframework.org/schema/integration/file"
+	xmlns:int-ws="http://www.springframework.org/schema/integration/ws"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/integration/jms http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd        
+		http://www.springframework.org/schema/integration/jdbc https://www.springframework.org/schema/integration/jdbc/spring-integration-jdbc.xsd
+		http://www.springframework.org/schema/integration/sftp http://www.springframework.org/schema/integration/sftp/spring-integration-sftp.xsd
+    	http://www.springframework.org/schema/integration/file https://www.springframework.org/schema/integration/file/spring-integration-file.xsd
+    	http://www.springframework.org/schema/integration/ws http://www.springframework.org/schema/integration/ws/spring-integration-ws.xsd">
+
+
+     <bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <property name="driverClassName" value="oracle.jdbc.OracleDriver"/>
+        <property name="url" value="jdbc:oracle:thin:@192.168.1.121:1521:bsit"/>
+        <property name="username" value="SCF_UPLOAD"/>
+        <property name="password" value="SCF_UPLOAD"/>
+    </bean>
+
+
+    <int:channel id="queryChannel" />
+    <int:channel id="outputChannel" />
+
+  
+ <int-jdbc:inbound-channel-adapter query="SELECT file_attachment FROM scf_file_attachments WHERE reference_id = '011ffb36568440e98a09'"
+                                   channel="queryChannel"
+                                   data-source="dataSource">
+    <int:poller fixed-rate="10000" />
+	</int-jdbc:inbound-channel-adapter>
+
+   
+    <int:service-activator input-channel="queryChannel" output-channel="outputChannel"
+                           ref="dataProcessor" method="processData"/>
+
+   
+   <int-file:outbound-channel-adapter id="fileOutboundAdapter"
+                                   directory="D:/Hari/demo_projects/destination"
+                                   filename-generator-expression="'output_file_' + T(java.lang.System).currentTimeMillis() + '.txt'" />
+
+ 
+    <bean id="dataProcessor" class="com.example.demo.DataProcessor" />
+
+</beans>
